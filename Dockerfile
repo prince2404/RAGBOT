@@ -1,19 +1,9 @@
 # Dockerfile
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim-buster
+# Use a supported Debian-based Python image
+FROM python:3.11-slim
 
 # Set the working directory in the container
 WORKDIR /app
-
-# Update sqlite3
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends sqlite3 libsqlite3-dev && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Verify sqlite3 version (optional)
-RUN sqlite3 --version
-
 
 # Copy the project files into the container
 COPY . .
