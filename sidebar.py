@@ -16,7 +16,7 @@ def display_sidebar():
 
     # Document upload
     # sidebar.py
-    uploaded_files = st.sidebar.file_uploader("Choose files", type=["pdf", "docx", "html", "csv", "xlsx", "txt"], accept_multiple_files=True)  # accept_multiple_files added
+    uploaded_files = st.sidebar.file_uploader("Choose files", type=["pdf", "docx", "html", "csv", "txt"], accept_multiple_files=True)
 
     if uploaded_files and st.sidebar.button("Upload"): # Now handles a list of files
      with st.spinner("Uploading..."):

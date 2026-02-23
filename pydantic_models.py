@@ -1,21 +1,16 @@
 from pydantic import BaseModel, Field
-from enum import Enum
 from datetime import datetime
 import typing
-
-class ModelName(str, Enum):
-    GPT4_O = "gpt-4o"
-    GPT4_O_MINI = "gpt-4o-mini"
 
 class QueryInput(BaseModel):
     question: str
     session_id: str = Field(default=None)
-    model: ModelName = Field(default=ModelName.GPT4_O)
+    model: str = Field(default="arcee-ai/trinity-large-preview:free")
 
 class QueryResponse(BaseModel):
     answer: str
     session_id: str
-    model: ModelName
+    model: str
 
 class DocumentInfo(BaseModel):
     id: int

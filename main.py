@@ -36,24 +36,25 @@ app = FastAPI()
 @app.post("/chat", response_model=QueryResponse)
 def chat(query_input: QueryInput):
     session_id = query_input.session_id or str(uuid.uuid4())
-    logging.info(f"Session ID: {session_id}, User Query: {query_input.question}, Model: {query_input.model.value}")
+    logging.info(f"Session ID: {session_id}, User Query: {query_input.question}, Model: {query_input.model}")
 
     chat_history = get_chat_history(session_id)
-    rag_chain = get_rag_chain(query_input.model.value)
-    answer = rag_chain.invoke({
+    rag_chain = get_rag_chain(query_input.model)
+    result = rag_chain.invoke({
         "input": query_input.question,
         "chat_history": chat_history
-    })['answer']
+    })
+    answer = result["answer"] if isinstance(result, dict) else str(result)
 
     # Save to database
-    insert_application_logs(session_id, query_input.question, answer, query_input.model.value)
+    insert_application_logs(session_id, query_input.question, answer, query_input.model)
     
     # Save to Google Sheets
     save_chat_to_sheets(
         # session_id=session_id,
         question=query_input.question,
         answer=answer,
-        # model=query_input.model.value
+        # model=query_input.model
     )
 
     logging.info(f"Session ID: {session_id}, AI Response: {answer}")
@@ -64,7 +65,7 @@ def chat(query_input: QueryInput):
 async def upload_and_index_document(files: list[UploadFile] = File(...)):
     results = []
     for file in files:
-        allowed_extensions = ['.pdf', '.docx', '.html', '.csv', '.xlsx', '.txt']  # Added .xlsx and .txt
+        allowed_extensions = ['.pdf', '.docx', '.html', '.csv', '.txt']
         file_extension = os.path.splitext(file.filename)[1].lower()
 
         if file_extension not in allowed_extensions:

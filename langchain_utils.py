@@ -1,6 +1,7 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnableLambda
 try:
     from langchain.chains.history_aware_retriever import create_history_aware_retriever
     from langchain.chains.retrieval import create_retrieval_chain
@@ -12,9 +13,7 @@ except ImportError:
 from typing import List
 from langchain_core.documents import Document
 import os
-from chroma_utils import vectorstore
-
-retriever = vectorstore.as_retriever(search_kwargs={"k": 15})
+from chroma_utils import get_vectorstore
 
 output_parser = StrOutputParser()
 
@@ -67,7 +66,16 @@ def get_rag_chain(model="arcee-ai/trinity-large-preview:free"):
         openai_api_key=os.getenv("OPENROUTER_API_KEY"),
         openai_api_base="https://openrouter.ai/api/v1"
     )
-    history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
-    question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
-    rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)    
-    return rag_chain
+    try:
+        retriever = get_vectorstore().as_retriever(search_kwargs={"k": 15})
+        history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
+        question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
+        rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
+        return rag_chain
+    except Exception:
+        fallback_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a helpful AI assistant."),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "{input}")
+        ])
+        return (fallback_prompt | llm | StrOutputParser() | RunnableLambda(lambda x: {"answer": x}))
