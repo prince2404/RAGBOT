@@ -3,23 +3,14 @@ from typing import List
 
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
-from langchain_community.document_loaders import (
-    BSHTMLLoader,
-    CSVLoader,
-    Docx2txtLoader,
-    PyPDFLoader,
-)
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.document_loaders import BSHTMLLoader, CSVLoader, Docx2txtLoader, PyPDFLoader
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 load_dotenv()
 
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200,
-    length_function=len,
-)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200, length_function=len)
 CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
 _vectorstore = None
 
@@ -27,13 +18,8 @@ _vectorstore = None
 def get_vectorstore():
     global _vectorstore
     if _vectorstore is None:
-        embedding_function = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-        _vectorstore = Chroma(
-            persist_directory=CHROMA_PERSIST_DIR,
-            embedding_function=embedding_function,
-        )
+        embedding_function = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
+        _vectorstore = Chroma(persist_directory=CHROMA_PERSIST_DIR, embedding_function=embedding_function)
     return _vectorstore
 
 
@@ -53,8 +39,7 @@ def load_and_split_document(file_path: str) -> List[Document]:
     else:
         raise ValueError(f"Unsupported file type: {file_path}")
 
-    documents = loader.load()
-    return text_splitter.split_documents(documents)
+    return text_splitter.split_documents(loader.load())
 
 
 def index_document_to_chroma(file_path_or_content: str, file_id: int) -> bool:
@@ -63,8 +48,7 @@ def index_document_to_chroma(file_path_or_content: str, file_id: int) -> bool:
         if os.path.exists(file_path_or_content):
             splits = load_and_split_document(file_path_or_content)
         else:
-            documents = [Document(page_content=file_path_or_content)]
-            splits = text_splitter.split_documents(documents)
+            splits = text_splitter.split_documents([Document(page_content=file_path_or_content)])
 
         for split in splits:
             split.metadata["file_id"] = file_id
@@ -80,11 +64,9 @@ def delete_doc_from_chroma(file_id: int):
     try:
         vectorstore = get_vectorstore()
         docs = vectorstore.get(where={"file_id": file_id})
-        print(f"Found {len(docs['ids'])} document chunks for file_id {file_id}")
-
+        print(f"Found {len(docs['ids'])} chunks for file_id {file_id}")
         vectorstore._collection.delete(where={"file_id": file_id})
-        print(f"Deleted all documents with file_id {file_id}")
         return True
     except Exception as e:
-        print(f"Error deleting document with file_id {file_id} from Chroma: {str(e)}")
+        print(f"Error deleting file_id {file_id} from Chroma: {e}")
         return False
