@@ -1,9 +1,14 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains.history_aware_retriever import create_history_aware_retriever
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
+try:
+    from langchain.chains.history_aware_retriever import create_history_aware_retriever
+    from langchain.chains.retrieval import create_retrieval_chain
+    from langchain.chains.combine_documents import create_stuff_documents_chain
+except ImportError:
+    from langchain_classic.chains.history_aware_retriever import create_history_aware_retriever
+    from langchain_classic.chains.retrieval import create_retrieval_chain
+    from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from typing import List
 from langchain_core.documents import Document
 import os

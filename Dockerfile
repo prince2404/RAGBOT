@@ -19,5 +19,5 @@ EXPOSE 8000
 # Use OpenRouter API key - set in Render dashboard or .env file
 # ENV OPENROUTER_API_KEY=your_openrouter_api_key
 
-# Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run the application (Render sets PORT at runtime)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
